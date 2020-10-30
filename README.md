@@ -1,20 +1,24 @@
 # KGS_download.well.rasters.XLM
-KGS_download.well.rasters.XLM
+# For download well raster (.XLM) files on Kansas Geological Survey: https://chasm.kgs.ku.edu/ords/elog.escnd6.SelectWells 
+# The link where filterred well data have scanned rasters (.XLM) files
 
-
-import os, sys
+import os
 from urllib import request, parse
 from bs4 import BeautifulSoup
 import math
 from zipfile import ZipFile
-# 
 
-KGS_download_path = "D:\Kansas OG Database Logs\KGS_Finney County Zipped Raster"
-unzipped_path = "D:\Kansas OG Database Logs\KGS_Finney County Raster"
-root_url = "https://chasm.kgs.ku.edu/ords/elog.escnd6.SelectWells"
 
-desired_state = 15
-desired_county = 55 #KGS county code  
+KGS_download_path = "D:\Kansas OG Database Logs\KGS_Ness County Zipped Raster" #please change the folder name to the desired county name
+unzipped_path = "D:\Kansas OG Database Logs\KGS_Ness County Raster"     #please change the folder name to the desired county name
+root_url = "https://chasm.kgs.ku.edu/ords/elog.escnd6.SelectWells"   #The link where filterred well data have scanned rasters (.XLM) files
+
+#desired_township =
+#desired_range =
+#disired_east_west =    #input "W" or "E" only
+#desired_section = 
+desired_state = 15  #Kansas sate code = 15, do not change
+desired_county = 135 #please change the desited county code  
 
 def request_soup(url,data=None):
     req =  request.Request(url, data=data)
@@ -23,86 +27,93 @@ def request_soup(url,data=None):
     return soup
 
 if not os.path.exists(KGS_download_path):   
-    os.makedirs(KGS_download_path + "/")   #如果KGS_download_path的資料夾在電腦裡不存在那就創這個資料夾
+    os.makedirs(KGS_download_path + "/")   #if the folder of KGS_download_path does not exist, create one
 if not os.path.exists(unzipped_path):   
     os.makedirs(unzipped_path + "/")
 '''
-# 1. Downaload All SelectWells from all the counties from Kansas State
-for i in range(1,211, 2):
-    # well_filename = f"{KGS_download_path}/well{i}.html"
-    # if os.path.exists(well_filename):
-        # print(f"skip {well_filename}")
-        # continue
+# Additional Function: Downaload every well from all the counties from Kansas State
+for county_codes in range(1, 209 + 2, 2):       #county_codes are 1, 3 ... ,209. odd numbers
+    well_filename = f"{KGS_download_path}/well{county_codes}.html"
+    if os.path.exists(well_filename):
+        print(f"skip {well_filename}") 
+        continue
 '''
-data = parse.urlencode({               #???
-    "ew":"W",
+# Calculate total pages from total record amount, shown on page 1, and divide by 50 wells displayed in one page
+data = parse.urlencode({               
+    #"ew": disried_east_west,
+    #"f_t": disired_township,
+    #"f_r": disired_range,
+    #"f_s": desired_section
     "f_st":desired_state,
-    "f_c": desired_county,   #edited
+    "f_c": desired_county,   #please use county_codes instead of desired_county if wish to download all the counties and adjust the code format
     "f_pg": 1
     }).encode()
-
-    # 2. Calculate the pages from total records divide by 50
 soup = request_soup(root_url, data)
 total_record_num = soup.find("hr").next_element.split(" ")[0] 
-total_pages = math.ceil(int(total_record_num)/50)
+total_pages = math.ceil(int(total_record_num)/50)   
+print(f"Collecting info of county:{desired_county} ..., total record number: {total_record_num}, total pages: {total_pages}")
 
-print(f"Collecting county:{desired_county} info... total_record_num: {total_record_num}, total_pages: {total_pages}")
-    #39-49 每個頁面中 table架構讀出來 
-for p in range(1, total_pages + 1):
-    print(f"**Processing county:{desired_county}, page:{p}/{total_pages}")
+
+# In each page, read the table's structure 
+for page in range(1, total_pages + 1):
+    print(f"** Processing county:{desired_county}, page:{page}/{total_pages}")
     data = parse.urlencode({
-        "ew":"W",
+       #"ew": disried_east_west,
+       #"f_t": disired_township,
+       #"f_r": disired_range,
+       #"f_s": desired_section,
         "f_st":desired_state,
         "f_c": desired_county,   #edited
-        "f_pg": p
+        "f_pg": page
         }).encode()
     soup = request_soup(root_url, data)
-    table = soup.find_all('table')[1]   #??? 1代表啥 位移1的表嗎?
-    tr_all = table.find_all("tr",attrs={"valign": "top"})   #<tr valign="top"> #??? 為何是冒號空格來表示
-    tr_index = 0                 #50-56 表格中的每一欄的井的超連結資料
+    table = soup.find_all('table')[1]   #skip table 0, start from table 1
+    tr_all = table.find_all("tr",attrs={"valign": "top"})   #<tr valign="top">
+    tr_index = 0                 
     for tr in tr_all:
         tr_index = tr_index + 1
-        link = tr.find_all("a")[0].get('href')    #??? 位移=0的a媽
-        print(f"*Processing item{tr_index}/{50} {link} in county:{desired_county}, page:{p}/{total_pages}")
+        link = tr.find_all("a")[0].get('href')    #start from the first one, a position 0.
+        print(f"** Processing well:{tr_index}/{50} {link} in county:{desired_county}, page:{page}/{total_pages}")
         soup = request_soup(link)
-        #第一個表裡面抓取API 等下檔案命名用
-        #API_t = soup.find("table", attrs={"align":"center", "border":"1"})
-      #  print(API_t)
+        
+# Grab API of the well for renaming the file later
         API = soup.find("strong", text = "API: ").next_element.next_element.split('\n')[0]
-        print("API =" + API)
+        print("API =" + API + '\n')
         fixed_API = ''.join(API.split("-"))
-        welline_log_t = soup.find("table",attrs={"align":"center", "width": "680"})  #<table aligh="center" width="680">   #每一個井資料頁面 把裡面結構抓出來
-        h3_all = welline_log_t.find_all("h3")                                #57-60 找到wireline log header data
-        for h3 in h3_all:                                    #???不能直接找到Wireline Log Header Data那個table(特定attribute)嗎??\
-            if h3.text == "Wireline Log Header Data":            #找要得table title
+        
+# In each well page, read the table's structure
+        welline_log_t = soup.find("table",attrs={"align":"center", "width": "680"})  #<table aligh="center" width="680">  
+        h3_all = welline_log_t.find_all("h3")           #h3 = table header 
+        for h3 in h3_all:                                    
+            if h3.text == "Wireline Log Header Data":            #find the desired table header = Wireline log Header Data
                 table_row_all = h3.findNext("table").find_all("tr",attrs={"valign": "top"})
-                for tr in table_row_all: #tr = each row of the table
-                   ## li_all = h3.findNext("table").find_all("li")  #li=網頁上的"Download Black and White Scan "的超連結的結構位置
+
+# Download raster file
+                for tr in table_row_all:               #tr = each row of the table
+                   ## li_all = h3.findNext("table").find_all("li")  #li is the where the "Download Black and White Scan" link located
                    ## for li in li_all:
                     if tr.find("a") != None:
                         wire_log_data_link = tr.find("a").get("href")
                         wire_log_data_filename = wire_log_data_link.split('/')[-1]
                         wire_log_path = f"{KGS_download_path}/{wire_log_data_filename}"
                         if os.path.exists(wire_log_path):
-                                print(f"Skip {wire_log_path}") #即使python會自動跳過以下載的檔案 還是寫出來
-                                continue     #??這功能是啥
-                        print(f"Downloading: {wire_log_data_link}")
-                        request.urlretrieve(wire_log_data_link,wire_log_path)   #下載並存成wire_log_data_filename黨名 這個函式需要給定檔案路徑跟名子
+                                print(f"Skip {wire_log_path}") #show the auto-skipped file path
+                                continue     
+                        print(f"- Downloading: {wire_log_data_link}")
+                        request.urlretrieve(wire_log_data_link,wire_log_path)   #download and save to the path (with file name). this function needs the name in the path
                         tool_filename = tr.find("strong", text = "Tool:").next_element.next_element.split('\n')[0].split('  ')[0]
                         tool_filename = tool_filename.replace("/","-")
-                       #解壓縮:
-                        with ZipFile(wire_log_path, 'r') as zipObj:
+                        
+# Unzip the downloaded file
+                        with ZipFile(wire_log_path, 'r') as zipObj: #'r' to read an existing file
                             unzipped_filename = zipObj.namelist()[0]
                             print(unzipped_filename)
-                            zipObj.extractall(unzipped_path + "/")
-
-                        #zipObj.extractall(unzipped_path + "/" + API + "_" + tool_filename)
-
-#                            if os.path.exists( f"{unzipped_path}/{wire_log_data_link.split('/')[-1]}.tif"):
-#                                print(f"EXIST:{unzipped_path}/{wire_log_data_link.split('/')[-1]}.tif") #即使python會自動跳過以下載的檔案 還是寫出來
-#                            continue 
-                            #unzipped_filename = wire_log_data_filename.split('.')[0]
+                            zipObj.extractall(unzipped_path + "/")  
+                            '''extractall() Note: if a member filename is an absolute path, a drive/UNC sharepoint and leading (back)slashes will be stripped, 
+                            e.g. C:\foo\bar becomes foo\bar on Windows. '''
+                            
+# Rename the file
                             existfile = f"{unzipped_path}/{unzipped_filename}"
                             newfile= f"{unzipped_path}/{fixed_API}_{tool_filename}_{unzipped_filename}"
-                            print('Changing name into ' + newfile + '\n')
+                            print('- Changing name/path into ' + newfile + '\n')
                             os.rename(existfile, newfile)
