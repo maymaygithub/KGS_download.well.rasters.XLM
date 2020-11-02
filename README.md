@@ -13,10 +13,10 @@ KGS_download_path = "D:\Kansas OG Database Logs\KGS_Ness County Zipped Raster" #
 unzipped_path = "D:\Kansas OG Database Logs\KGS_Ness County Raster"     #please change the folder name to the desired county name
 root_url = "https://chasm.kgs.ku.edu/ords/elog.escnd6.SelectWells"   #The link where filterred well data have scanned rasters (.XLM) files
 
-#desired_township =
-#desired_range =
-#disired_east_west =    #input "W" or "E" only
-#desired_section = 
+ #desired_township =
+ #desired_range =
+ #disired_east_west =    #input "W" or "E" only
+ #desired_section = 
 desired_state = 15  #Kansas sate code = 15, do not change
 desired_county = 135 #please change the desited county code  
 
