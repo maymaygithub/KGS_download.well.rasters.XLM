@@ -1,6 +1,6 @@
 # KGS_download.well.rasters.XLM
 # For download well raster (.XLM) files on Kansas Geological Survey: https://chasm.kgs.ku.edu/ords/elog.escnd6.SelectWells 
-# The link where filterred well data have scanned rasters (.XLM) files
+
 
 import os
 from urllib import request, parse
@@ -38,6 +38,7 @@ for county_codes in range(1, 209 + 2, 2):       #county_codes are 1, 3 ... ,209.
         print(f"skip {well_filename}") 
         continue
 '''
+
 # Calculate total pages from total record amount, shown on page 1, and divide by 50 wells displayed in one page
 data = parse.urlencode({               
     #"ew": disried_east_west,
